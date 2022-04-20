@@ -10,34 +10,78 @@ numTips <- Ntip(fishTree)
 rtNode = numTips + 1
 currentNode <- rtNode
 
+#DEBUG
+tre <- rcoal(10)
+tre2 <- tre
+tre2$edge.length <- NULL
+write.tree(tre2)
+
+fishTree <- tre2
+
+summary(fishTree)
+numTips <- Ntip(fishTree)
+rtNode = numTips + 1
+currentNode <- rtNode
+
 #drop nodes that have underscores
-prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
+# prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
+prunedTree <- collapse.singles1(tre, root.edge = TRUE)
 
 #convert to tibble
 tblfishTree <- as_tibble(prunedTree)
 LRtable <- data.frame(matrix(ncol = 3, nrow = 0))
 colnames(LRtable) <-c("Node", "Left", "Right")
-rebuildTree(currentNode,1,LRtable)
+rebuildTree(tblfishTree, currentNode, 1, LRtable)
 nrow(LRtable)
 
-rebuildTree <- function(currentNode, lft, LRtable)
+# tidytree experimentation
+child(tblfishTree, 1)
+length(child(tblfishTree, 14)$node)
+child(tblfishTree, 14)$node[2]
+tblfishTree
+
+prnts$currentNode
+
+# have it return the LRtable
+rebuildTree <- function(fish_tree, curr_node, left, LRtable)
 {
-  rgt <- lft + 1
-  prnts <- c(ancestor(tblfishTree, currentNode)[,"node"])
-  if(length(prnts$node) > 0)
-  {
-    res <- prnts$node
-    cn <- currentNode
-    x <- as.integer(cn)
-    res <- append(res,x)
+  # initialize values
+  children = child(fish_tree, curr_node)$node
+  right <- left + 1
+  
+  # base case (if no children)
+  if (length(children) == 0) {
+    nodeRow <- c(curr_node, left, right)
+    
+    # add a row to the LRTable
+    LRtable[nrow(LRtable)+1,] <- nodeRow
+    return(list(LRtable, right + 1))
   }
-  for(i in length(res))
-  {
-    if(res[i] == currentNode){next}
-    else{rgt <- rebuildTree(res[i],rgt,LRtable)}
+  
+  # recursive case
+  # if the right value is NULL, then it won't be added to NodeRow
+  # so 0 is our next best replacement.
+  nodeRow <- c(curr_node, left, 0)
+  LRtable[nrow(LRtable)+1,] <- nodeRow
+  newTable <- LRtable
+  
+  # do recursion
+  # for the first child, right is always left+1
+  # right is obtained after running each child
+  for (childe in children) {
+    pack <- rebuildTree(fish_tree, childe, right, newTable)
+    newTable <- as.data.frame(pack[1])
+    right <- as.numeric(pack[2])
   }
-  LRtable[nrow(LRtable) + 1,] <- c(currentNode,lft,rgt)
-  return(rgt + 1)
+  
+  fullTable <- newTable
+  
+  # to prevent duplicate, do an if statement to see if 
+  # curr node's right value is NULL
+  fullTable[fullTable$Node == curr_node, ]$Right <- right
+  
+  # TIP: if you can't get it to work, try doing it in pre-order
+  return(list(fullTable, right + 1))
 }
 
 has.singles <- function(tree)
