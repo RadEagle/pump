@@ -24,10 +24,12 @@ fishTree <- tre2
 
 plot.phylo(fishTree, show.node.label = TRUE)
 
-nodelabels("", 11)
+nodelabels("L: 11", 11)
+nodelabels("L: 11\nR: 12", 12)
 nodelabels()
 tiplabels()
 
+fishTree
 summary(fishTree)
 numTips <- Ntip(fishTree)
 rtNode = numTips + 1
@@ -40,12 +42,32 @@ pack <- rebuildTree(tblFishTree, currentNode, 1, LRtable)
 pack <- rebuildTree(tblFishTree, 18, 1, LRtable)
 pack
 
-pack[1]
+lrtable <- as.data.frame(pack[1])
+as.data.frame(pack[1])
 
 testTable <- as.data.frame(pack[1])
 testTable[nrow(testTable)+1,] <- c(2, 3, 4)
 testTable
 testTable[testTable$Node == 1, ]$Right <- 6
+
+labelAllNodes(lrtable)
+tiplabels()
+nodelabels()
+
+labelAllNodes <- function(LR_table)
+{
+  nodes <- LR_table$Node
+  for (node in nodes) {
+    left <- LR_table[LR_table$Node == node, ]$Left
+    right <- LR_table[LR_table$Node == node, ]$Right
+    label <- paste(paste("N:", node), paste("L:", left), paste("R:", right), sep='\n')
+    nodelabels(label, node)
+  }
+  
+  return()
+}
+
+node.label
 
 # have it return the LRtable
 rebuildTree <- function(fish_tree, curr_node, left, LRtable)
@@ -93,3 +115,6 @@ zz = list(1, 2)
 for (i in zz) {
   print(i)
 }
+
+s <- paste("L;", 14, "R:", 15)
+s

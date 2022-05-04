@@ -14,7 +14,7 @@ currentNode <- rtNode
 tre <- rcoal(10)
 tre2 <- tre
 tre2$edge.length <- NULL
-write.tree(tre2)
+write.tree(tre)
 
 fishTree <- tre2
 
@@ -24,26 +24,39 @@ rtNode = numTips + 1
 currentNode <- rtNode
 
 #drop nodes that have underscores
-# prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
-prunedTree <- collapse.singles1(tre, root.edge = TRUE)
+prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
+# prunedTree <- collapse.singles1(tre, root.edge = TRUE)
 
-#convert to tibble
-tblfishTree <- as_tibble(prunedTree)
+# convert to tibble
+tblfishTree <- as_tibble(fishTree)
 LRtable <- data.frame(matrix(ncol = 3, nrow = 0))
-colnames(LRtable) <-c("Node", "Left", "Right")
-rebuildTree(tblfishTree, currentNode, 1, LRtable)
-nrow(LRtable)
+colnames(LRtable) <- c("Node", "Left", "Right")
+fullTable <- rebuildTree(tblfishTree, currentNode, 1, LRtable)
+
+curr_node <- Ntip(tre) + 1
+tbl_tre <- as_tibble(tre)
+fullTable <- rebuildTree(tbl_tre, curr_node, 1, LRtable)
+# nrow(LRtable)
 
 # tidytree experimentation
-child(tblfishTree, 1)
+child(tblfishTree, 31518)
 length(child(tblfishTree, 14)$node)
 child(tblfishTree, 14)$node[2]
 tblfishTree
 
 prnts$currentNode
 
+# try doing this using edge matrices
+# do this iteratively rather than recursively is faster
 # have it return the LRtable
-rebuildTree <- function(fish_tree, curr_node, left, LRtable)
+# global variables are bad because some data spills out
+# TODO: speed this up.
+
+# Design 1: For each recursive function, just return the new row
+# Design 2: Make a class holding the table and pass in by reference
+# Design 3: Use Rccp
+
+rebuildTreeWrapper <- function(curr_node, left, LRtable)
 {
   # initialize values
   children = child(fish_tree, curr_node)$node
@@ -69,7 +82,7 @@ rebuildTree <- function(fish_tree, curr_node, left, LRtable)
   # for the first child, right is always left+1
   # right is obtained after running each child
   for (childe in children) {
-    pack <- rebuildTree(fish_tree, childe, right, newTable)
+    pack <- rebuildTreeWrapper(childe, right, newTable)
     newTable <- as.data.frame(pack[1])
     right <- as.numeric(pack[2])
   }
@@ -82,6 +95,11 @@ rebuildTree <- function(fish_tree, curr_node, left, LRtable)
   
   # TIP: if you can't get it to work, try doing it in pre-order
   return(list(fullTable, right + 1))
+}
+
+rebuildTree <- function(fish_tree, curr_node, left, LRtable) {
+  environment(rebuildTreeWrapper) <- environment()
+  return(as.data.frame(rebuildTreeWrapper(curr_node, left, LRtable)[1]))
 }
 
 has.singles <- function(tree)
