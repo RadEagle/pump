@@ -31,11 +31,11 @@ prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
 tblfishTree <- as_tibble(fishTree)
 LRtable <- data.frame(matrix(ncol = 3, nrow = 0))
 colnames(LRtable) <- c("Node", "Left", "Right")
-fullTable <- rebuildTree(tblfishTree, currentNode, 1, LRtable)
+fullTable <- rebuildTree(tblfishTree, currentNode, 1)
 
 curr_node <- Ntip(tre) + 1
 tbl_tre <- as_tibble(tre)
-fullTable <- rebuildTree(tbl_tre, curr_node, 1, LRtable)
+fullTable <- rebuildTree(tbl_tre, curr_node, 1)
 # nrow(LRtable)
 
 # tidytree experimentation
@@ -56,50 +56,51 @@ prnts$currentNode
 # Design 2: Make a class holding the table and pass in by reference
 # Design 3: Use Rccp
 
-rebuildTreeWrapper <- function(curr_node, left, LRtable)
+rebuildTreeWrapper <- function(curr_node, left)
 {
   # initialize values
   children = child(fish_tree, curr_node)$node
   right <- left + 1
   
+  # initialize new table (so we don't have to copy over table)
+  lr_table <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(lr_table) <- c("Node", "Left", "Right")
+  
   # base case (if no children)
   if (length(children) == 0) {
     nodeRow <- c(curr_node, left, right)
     
-    # add a row to the LRTable
-    LRtable[nrow(LRtable)+1,] <- nodeRow
-    return(list(LRtable, right + 1))
+    # add a row to the lr_table
+    lr_table[nrow(lr_table)+1,] <- nodeRow
+    return(list(lr_table, right + 1))
   }
   
   # recursive case
   # if the right value is NULL, then it won't be added to NodeRow
   # so 0 is our next best replacement.
   nodeRow <- c(curr_node, left, 0)
-  LRtable[nrow(LRtable)+1,] <- nodeRow
-  newTable <- LRtable
+  lr_table[nrow(LRtable)+1,] <- nodeRow
   
   # do recursion
   # for the first child, right is always left+1
   # right is obtained after running each child
   for (childe in children) {
-    pack <- rebuildTreeWrapper(childe, right, newTable)
-    newTable <- as.data.frame(pack[1])
+    pack <- rebuildTreeWrapper(childe, right)
+    lr_table <- rbind(lr_table, as.data.frame(pack[1]))
     right <- as.numeric(pack[2])
   }
   
-  fullTable <- newTable
-  
-  # to prevent duplicate, do an if statement to see if 
+  # to prevent duplicates, do an if statement to see if 
   # curr node's right value is NULL
-  fullTable[fullTable$Node == curr_node, ]$Right <- right
+  lr_table[lr_table$Node == curr_node, ]$Right <- right
   
   # TIP: if you can't get it to work, try doing it in pre-order
-  return(list(fullTable, right + 1))
+  return(list(lr_table, right + 1))
 }
 
-rebuildTree <- function(fish_tree, curr_node, left, LRtable) {
+rebuildTree <- function(fish_tree, curr_node, left) {
   environment(rebuildTreeWrapper) <- environment()
-  return(as.data.frame(rebuildTreeWrapper(curr_node, left, LRtable)[1]))
+  return(as.data.frame(rebuildTreeWrapper(curr_node, left)[1]))
 }
 
 has.singles <- function(tree)
