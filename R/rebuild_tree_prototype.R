@@ -28,7 +28,7 @@ prunedTree <- collapse.singles1(fishTree, root.edge = TRUE)
 # prunedTree <- collapse.singles1(tre, root.edge = TRUE)
 
 # convert to tibble
-tblfishTree <- as_tibble(fishTree)
+tblfishTree <- as_tibble(prunedTree)
 LRtable <- data.frame(matrix(ncol = 3, nrow = 0))
 colnames(LRtable) <- c("Node", "Left", "Right")
 fullTable <- rebuildTree(tblfishTree, currentNode, 1)
@@ -143,23 +143,22 @@ collapse.singles1 <- function(tree, root.edge = FALSE)
     e2 <- e2[-i]
   }
   singles <- which(tabulate(e1) == 1)
-  
-  if(grepl("_", parent(tree, e1)$label) == FALSE){
-    if (length(singles) > 0) {
-      ii <- sort(match(singles, e1), decreasing = TRUE)
-      jj <- match(e1[ii], e2)
+
+  if (length(singles) > 0) {
+    ii <- sort(match(singles, e1), decreasing = TRUE)
+    jj <- match(e1[ii], e2)
+    
+    for (i in 1:length(singles)) {
+      e2[jj[i]] <- e2[ii[i]]
       
-      for (i in 1:length(singles)) {
-        e2[jj[i]] <- e2[ii[i]]
-        
-        if (wbl) el[jj[i]] <- el[jj[i]] + el[ii[i]]
-      }
-      
-      e1 <- e1[-ii]
-      e2 <- e2[-ii]
-      if (wbl) el <- el[-ii]
+      if (wbl) el[jj[i]] <- el[jj[i]] + el[ii[i]]
     }
+    
+    e1 <- e1[-ii]
+    e2 <- e2[-ii]
+    if (wbl) el <- el[-ii]
   }
+  
   Nnode <- length(e1) - n + 1L
   oldnodes <- unique(e1)
   
